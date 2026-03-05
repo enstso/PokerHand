@@ -5,6 +5,7 @@ export type HandCategory =
   | "ONE_PAIR"
   | "TWO_PAIR"
   | "THREE_OF_A_KIND"
+  | "FLUSH"
   | "STRAIGHT";
 
 export type HandEvaluation = {
@@ -84,6 +85,17 @@ export function evaluate5(cards: Card[]): HandEvaluation {
     .map(([rank]) => rank)
     .sort((a, b) => b - a);
   const straightHighCard = getStraightHighCard(rankValues);
+  const firstSuit = cards[0]?.suit;
+  const isFlush = firstSuit !== undefined && cards.every((card) => card.suit === firstSuit);
+
+  if (isFlush) {
+    const flushRanks = [...rankValues].sort((a, b) => b - a);
+
+    return {
+      category: "FLUSH",
+      tiebreak: flushRanks
+    };
+  }
 
   if (straightHighCard !== null) {
     return {
