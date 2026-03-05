@@ -5,6 +5,7 @@ import { compareHandValues } from "./hand-comparator.js";
 export type WinnersResult = {
   winnerIndexes: number[];
   playerResults: BestOfSevenEvaluation[];
+  splitPot: boolean;
 };
 
 export function evaluateHoldemHand(board: Card[], hole: Card[]): BestOfSevenEvaluation {
@@ -51,5 +52,9 @@ export function determineWinners(board: Card[], playersHoles: Card[][]): Winners
     }
   }
 
-  return { winnerIndexes, playerResults };
+  return {
+    winnerIndexes,
+    playerResults,
+    splitPot: winnerIndexes.length > 1
+  };
 }
