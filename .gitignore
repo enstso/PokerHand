@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+*.log
+
+# Local artifacts
+.DS_Store
+.idea/
+.swift-cache/
+.swift-home/
+tdd-exam-grp2-2026.pdf
