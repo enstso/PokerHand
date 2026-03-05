@@ -1,6 +1,6 @@
 import type { Card, Rank } from "./card.js";
 
-export type HandCategory = "HIGH_CARD";
+export type HandCategory = "HIGH_CARD" | "ONE_PAIR";
 
 export type HandEvaluation = {
   category: HandCategory;
@@ -28,7 +28,34 @@ export function evaluate5(cards: Card[]): HandEvaluation {
     throw new Error("evaluate5 requires exactly 5 cards");
   }
 
-  const tiebreak = cards.map((card) => RANK_VALUE[card.rank]).sort((a, b) => b - a);
+  const rankValues = cards.map((card) => RANK_VALUE[card.rank]);
+  const counts = new Map<number, number>();
+
+  for (const value of rankValues) {
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+
+  const pairRanks = [...counts.entries()]
+    .filter(([, count]) => count === 2)
+    .map(([rank]) => rank)
+    .sort((a, b) => b - a);
+
+  if (pairRanks.length === 1) {
+    const pairRank = pairRanks[0];
+    if (pairRank === undefined) {
+      throw new Error("Pair rank resolution failed");
+    }
+    const kickers = rankValues
+      .filter((rank) => rank !== pairRank)
+      .sort((a, b) => b - a);
+
+    return {
+      category: "ONE_PAIR",
+      tiebreak: [pairRank, ...kickers]
+    };
+  }
+
+  const tiebreak = rankValues.sort((a, b) => b - a);
 
   return {
     category: "HIGH_CARD",
