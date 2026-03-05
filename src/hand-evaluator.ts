@@ -5,6 +5,7 @@ export type HandCategory =
   | "ONE_PAIR"
   | "TWO_PAIR"
   | "THREE_OF_A_KIND"
+  | "FULL_HOUSE"
   | "FLUSH"
   | "STRAIGHT";
 
@@ -87,6 +88,19 @@ export function evaluate5(cards: Card[]): HandEvaluation {
   const straightHighCard = getStraightHighCard(rankValues);
   const firstSuit = cards[0]?.suit;
   const isFlush = firstSuit !== undefined && cards.every((card) => card.suit === firstSuit);
+
+  if (tripRanks.length === 1 && pairRanks.length === 1) {
+    const tripRank = tripRanks[0];
+    const pairRank = pairRanks[0];
+    if (tripRank === undefined || pairRank === undefined) {
+      throw new Error("Full house rank resolution failed");
+    }
+
+    return {
+      category: "FULL_HOUSE",
+      tiebreak: [tripRank, pairRank]
+    };
+  }
 
   if (isFlush) {
     const flushRanks = [...rankValues].sort((a, b) => b - a);
