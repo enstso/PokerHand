@@ -1,4 +1,5 @@
 import type { Card, Rank } from "./card.js";
+import { compareHandValues } from "./hand-comparator.js";
 
 export type HandCategory =
   | "HIGH_CARD"
@@ -14,6 +15,10 @@ export type HandCategory =
 export type HandEvaluation = {
   category: HandCategory;
   tiebreak: number[];
+};
+
+export type BestOfSevenEvaluation = HandEvaluation & {
+  chosen5: Card[];
 };
 
 const RANK_VALUE: Record<Rank, number> = {
@@ -65,6 +70,14 @@ function getStraightHighCard(rankValues: number[]): number | null {
 
   const highestRank = uniqueRanks[uniqueRanks.length - 1];
   return highestRank ?? null;
+}
+
+function getCardAt(cards: Card[], index: number): Card {
+  const card = cards[index];
+  if (card === undefined) {
+    throw new Error("Card index out of range");
+  }
+  return card;
 }
 
 export function evaluate5(cards: Card[]): HandEvaluation {
@@ -202,4 +215,45 @@ export function evaluate5(cards: Card[]): HandEvaluation {
     category: "HIGH_CARD",
     tiebreak
   };
+}
+
+export function evaluate7(cards: Card[]): BestOfSevenEvaluation {
+  if (cards.length !== 7) {
+    throw new Error("evaluate7 requires exactly 7 cards");
+  }
+
+  let best: BestOfSevenEvaluation | null = null;
+
+  for (let a = 0; a <= 2; a += 1) {
+    for (let b = a + 1; b <= 3; b += 1) {
+      for (let c = b + 1; c <= 4; c += 1) {
+        for (let d = c + 1; d <= 5; d += 1) {
+          for (let e = d + 1; e <= 6; e += 1) {
+            const chosen5 = [
+              getCardAt(cards, a),
+              getCardAt(cards, b),
+              getCardAt(cards, c),
+              getCardAt(cards, d),
+              getCardAt(cards, e)
+            ];
+            const value = evaluate5(chosen5);
+            const candidate: BestOfSevenEvaluation = {
+              ...value,
+              chosen5
+            };
+
+            if (best === null || compareHandValues(candidate, best) > 0) {
+              best = candidate;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (best === null) {
+    throw new Error("Unable to evaluate best-of-7 hand");
+  }
+
+  return best;
 }
