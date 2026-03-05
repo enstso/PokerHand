@@ -24,6 +24,9 @@ describe("compareHandValues", () => {
     for (let index = 0; index < orderedHands.length - 1; index += 1) {
       const stronger = orderedHands[index];
       const weaker = orderedHands[index + 1];
+      if (stronger === undefined || weaker === undefined) {
+        throw new Error("Unexpected missing hand in ordered list");
+      }
 
       expect(compareHandValues(stronger, weaker)).toBeGreaterThan(0);
       expect(compareHandValues(weaker, stronger)).toBeLessThan(0);
