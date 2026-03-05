@@ -8,6 +8,7 @@ export type WinnersResult = {
   splitPot: boolean;
 };
 
+// Evaluates a Texas Hold'em hand given a 5-card board and 2 hole cards, returning the best 5-card hand evaluation
 export function evaluateHoldemHand(board: Card[], hole: Card[]): BestOfSevenEvaluation {
   if (board.length !== 5) {
     throw new Error("Board must contain exactly 5 cards");
@@ -21,6 +22,7 @@ export function evaluateHoldemHand(board: Card[], hole: Card[]): BestOfSevenEval
   return evaluate7([...board, ...hole]);
 }
 
+// Determines the winner(s) among multiple players given a 5-card board and each player's 2 hole cards, returning the indexes of the winning player(s) and their hand evaluations
 export function determineWinners(board: Card[], playersHoles: Card[][]): WinnersResult {
   if (playersHoles.length === 0) {
     throw new Error("At least one player is required");

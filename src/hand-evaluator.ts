@@ -37,10 +37,12 @@ const RANK_VALUE: Record<Rank, number> = {
   A: 14
 };
 
+// This function generates a unique string representation of a card based on its rank and suit, which is used for detecting duplicates in the hand evaluation process.
 function notationOf(card: Card): string {
   return `${card.rank}${card.suit}`;
 }
 
+// This function checks for duplicate cards in the given array and throws an error if any duplicates are found, ensuring that the hand evaluation is based on valid card combinations.
 export function assertNoDuplicateCards(cards: Card[]): void {
   const seen = new Set<string>();
 
@@ -53,6 +55,7 @@ export function assertNoDuplicateCards(cards: Card[]): void {
   }
 }
 
+// This function checks if the given rank values form a straight and returns the high card of the straight if they do, or null if they don't. It also handles the special case of a "wheel" straight (A-2-3-4-5).
 function getStraightHighCard(rankValues: number[]): number | null {
   const uniqueRanks = [...new Set(rankValues)].sort((a, b) => a - b);
 
@@ -87,7 +90,7 @@ function getStraightHighCard(rankValues: number[]): number | null {
   const highestRank = uniqueRanks[uniqueRanks.length - 1];
   return highestRank ?? null;
 }
-
+// This function is used to safely access cards by index during the best-of-seven evaluation.
 function getCardAt(cards: Card[], index: number): Card {
   const card = cards[index];
   if (card === undefined) {
@@ -96,10 +99,12 @@ function getCardAt(cards: Card[], index: number): Card {
   return card;
 }
 
+// This function is used to determine the rank value of a card for evaluation and sorting purposes.
 function rankValueOf(card: Card): number {
   return RANK_VALUE[card.rank];
 }
 
+// This function groups cards by their rank value, which is useful for evaluating hand categories like pairs, three of a kind, etc.
 function groupCardsByRank(cards: Card[]): Map<number, Card[]> {
   const groups = new Map<number, Card[]>();
 
@@ -116,6 +121,7 @@ function groupCardsByRank(cards: Card[]): Map<number, Card[]> {
   return groups;
 }
 
+// This function sorts cards in descending order of their rank value, which is important for tie-breaking scenarios in hand evaluation.
 function sortCardsByRankDesc(cards: Card[]): Card[] {
   return cards
     .map((card, index) => ({ card, index, rankValue: rankValueOf(card) }))
@@ -128,6 +134,7 @@ function sortCardsByRankDesc(cards: Card[]): Card[] {
     .map(({ card }) => card);
 }
 
+// This function orders cards according to the specified rank groups, which is essential for correctly evaluating hand categories that depend on the grouping of ranks (e.g., pairs, three of a kind).
 function orderCardsByRankGroups(cards: Card[], rankOrder: number[]): Card[] {
   const groups = groupCardsByRank(cards);
   const ordered: Card[] = [];
@@ -147,6 +154,7 @@ function orderCardsByRankGroups(cards: Card[], rankOrder: number[]): Card[] {
   return ordered;
 }
 
+// This function orders the cards in a straight or straight flush according to the high card of the straight, which is crucial for correctly evaluating and comparing straight hands.
 function orderStraightCards(cards: Card[], highCard: number): Card[] {
   const rankOrder =
     highCard === 5
@@ -166,6 +174,7 @@ function orderStraightCards(cards: Card[], highCard: number): Card[] {
   return ordered;
 }
 
+// This function determines the order of the chosen 5 cards for a best-of-seven evaluation based on the hand category and tiebreak information, ensuring that the cards are ordered correctly for tie-breaking comparisons.
 function orderChosen5(cards: Card[], evaluation: HandEvaluation): Card[] {
   switch (evaluation.category) {
     case "STRAIGHT":
@@ -188,6 +197,7 @@ function orderChosen5(cards: Card[], evaluation: HandEvaluation): Card[] {
   }
 }
 
+// This function evaluates a 5-card hand and determines its category and tiebreak information, which is essential for comparing hands and determining winners in poker games.
 export function evaluate5(cards: Card[]): HandEvaluation {
   if (cards.length !== 5) {
     throw new Error("evaluate5 requires exactly 5 cards");
@@ -325,6 +335,7 @@ export function evaluate5(cards: Card[]): HandEvaluation {
   };
 }
 
+// This function evaluates a 7-card hand and determines the best possible 5-card hand category and tiebreak information, which is crucial for games like Texas Hold'em where players have 7 cards to choose from.
 export function evaluate7(cards: Card[]): BestOfSevenEvaluation {
   if (cards.length !== 7) {
     throw new Error("evaluate7 requires exactly 7 cards");

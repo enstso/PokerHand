@@ -24,6 +24,7 @@ export type Card = {
   suit: Suit;
 };
 
+// Parses a card notation like "AS" into a Card object { rank: "A", suit: "S" }
 export function parseCard(notation: string): Card {
   if (notation.length !== 2) {
     throw new Error("Invalid format");

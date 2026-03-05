@@ -12,6 +12,7 @@ const CATEGORY_STRENGTH: Record<HandCategory, number> = {
   STRAIGHT_FLUSH: 8
 };
 
+// Returns a positive number if left is stronger, negative if right is stronger, or 0 if they are equal
 export function compareHandValues(left: HandEvaluation, right: HandEvaluation): number {
   const categoryDiff = CATEGORY_STRENGTH[left.category] - CATEGORY_STRENGTH[right.category];
   if (categoryDiff !== 0) {
