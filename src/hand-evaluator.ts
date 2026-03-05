@@ -2,6 +2,7 @@ import type { Card, Rank } from "./card.js";
 
 export type HandCategory =
   | "HIGH_CARD"
+  | "STRAIGHT_FLUSH"
   | "ONE_PAIR"
   | "TWO_PAIR"
   | "THREE_OF_A_KIND"
@@ -93,6 +94,13 @@ export function evaluate5(cards: Card[]): HandEvaluation {
   const straightHighCard = getStraightHighCard(rankValues);
   const firstSuit = cards[0]?.suit;
   const isFlush = firstSuit !== undefined && cards.every((card) => card.suit === firstSuit);
+
+  if (isFlush && straightHighCard !== null) {
+    return {
+      category: "STRAIGHT_FLUSH",
+      tiebreak: [straightHighCard]
+    };
+  }
 
   if (quadRanks.length === 1) {
     const quadRank = quadRanks[0];
