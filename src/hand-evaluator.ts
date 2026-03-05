@@ -4,7 +4,8 @@ export type HandCategory =
   | "HIGH_CARD"
   | "ONE_PAIR"
   | "TWO_PAIR"
-  | "THREE_OF_A_KIND";
+  | "THREE_OF_A_KIND"
+  | "STRAIGHT";
 
 export type HandEvaluation = {
   category: HandCategory;
@@ -27,6 +28,41 @@ const RANK_VALUE: Record<Rank, number> = {
   A: 14
 };
 
+function getStraightHighCard(rankValues: number[]): number | null {
+  const uniqueRanks = [...new Set(rankValues)].sort((a, b) => a - b);
+
+  if (uniqueRanks.length !== 5) {
+    return null;
+  }
+
+  const isWheel =
+    uniqueRanks[0] === 2 &&
+    uniqueRanks[1] === 3 &&
+    uniqueRanks[2] === 4 &&
+    uniqueRanks[3] === 5 &&
+    uniqueRanks[4] === 14;
+
+  if (isWheel) {
+    return 5;
+  }
+
+  for (let index = 1; index < uniqueRanks.length; index += 1) {
+    const previousRank = uniqueRanks[index - 1];
+    const currentRank = uniqueRanks[index];
+
+    if (previousRank === undefined || currentRank === undefined) {
+      return null;
+    }
+
+    if (currentRank - previousRank !== 1) {
+      return null;
+    }
+  }
+
+  const highestRank = uniqueRanks[uniqueRanks.length - 1];
+  return highestRank ?? null;
+}
+
 export function evaluate5(cards: Card[]): HandEvaluation {
   if (cards.length !== 5) {
     throw new Error("evaluate5 requires exactly 5 cards");
@@ -47,6 +83,14 @@ export function evaluate5(cards: Card[]): HandEvaluation {
     .filter(([, count]) => count === 3)
     .map(([rank]) => rank)
     .sort((a, b) => b - a);
+  const straightHighCard = getStraightHighCard(rankValues);
+
+  if (straightHighCard !== null) {
+    return {
+      category: "STRAIGHT",
+      tiebreak: [straightHighCard]
+    };
+  }
 
   if (tripRanks.length === 1) {
     const tripRank = tripRanks[0];
