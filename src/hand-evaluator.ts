@@ -5,6 +5,7 @@ export type HandCategory =
   | "ONE_PAIR"
   | "TWO_PAIR"
   | "THREE_OF_A_KIND"
+  | "FOUR_OF_A_KIND"
   | "FULL_HOUSE"
   | "FLUSH"
   | "STRAIGHT";
@@ -85,9 +86,30 @@ export function evaluate5(cards: Card[]): HandEvaluation {
     .filter(([, count]) => count === 3)
     .map(([rank]) => rank)
     .sort((a, b) => b - a);
+  const quadRanks = [...counts.entries()]
+    .filter(([, count]) => count === 4)
+    .map(([rank]) => rank)
+    .sort((a, b) => b - a);
   const straightHighCard = getStraightHighCard(rankValues);
   const firstSuit = cards[0]?.suit;
   const isFlush = firstSuit !== undefined && cards.every((card) => card.suit === firstSuit);
+
+  if (quadRanks.length === 1) {
+    const quadRank = quadRanks[0];
+    if (quadRank === undefined) {
+      throw new Error("Four of a kind rank resolution failed");
+    }
+
+    const kicker = rankValues.find((rank) => rank !== quadRank);
+    if (kicker === undefined) {
+      throw new Error("Four of a kind kicker resolution failed");
+    }
+
+    return {
+      category: "FOUR_OF_A_KIND",
+      tiebreak: [quadRank, kicker]
+    };
+  }
 
   if (tripRanks.length === 1 && pairRanks.length === 1) {
     const tripRank = tripRanks[0];
