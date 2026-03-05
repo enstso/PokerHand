@@ -100,6 +100,43 @@ function rankValueOf(card: Card): number {
   return RANK_VALUE[card.rank];
 }
 
+function sortDesc(values: number[]): number[] {
+  return [...values].sort((a, b) => b - a);
+}
+
+function buildRankCounts(rankValues: number[]): Map<number, number> {
+  const counts = new Map<number, number>();
+
+  for (const value of rankValues) {
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+
+  return counts;
+}
+
+function ranksWithCount(counts: Map<number, number>, targetCount: number): number[] {
+  return [...counts.entries()]
+    .filter(([, count]) => count === targetCount)
+    .map(([rank]) => rank)
+    .sort((a, b) => b - a);
+}
+
+function requireSingleRank(ranks: number[], errorMessage: string): number {
+  const rank = ranks[0];
+  if (rank === undefined) {
+    throw new Error(errorMessage);
+  }
+  return rank;
+}
+
+function findKicker(rankValues: number[], excludedRanks: number[], errorMessage: string): number {
+  const kicker = rankValues.find((rank) => !excludedRanks.includes(rank));
+  if (kicker === undefined) {
+    throw new Error(errorMessage);
+  }
+  return kicker;
+}
+
 function groupCardsByRank(cards: Card[]): Map<number, Card[]> {
   const groups = new Map<number, Card[]>();
 
@@ -193,25 +230,11 @@ export function evaluate5(cards: Card[]): HandEvaluation {
     throw new Error("evaluate5 requires exactly 5 cards");
   }
 
-  const rankValues = cards.map((card) => RANK_VALUE[card.rank]);
-  const counts = new Map<number, number>();
-
-  for (const value of rankValues) {
-    counts.set(value, (counts.get(value) ?? 0) + 1);
-  }
-
-  const pairRanks = [...counts.entries()]
-    .filter(([, count]) => count === 2)
-    .map(([rank]) => rank)
-    .sort((a, b) => b - a);
-  const tripRanks = [...counts.entries()]
-    .filter(([, count]) => count === 3)
-    .map(([rank]) => rank)
-    .sort((a, b) => b - a);
-  const quadRanks = [...counts.entries()]
-    .filter(([, count]) => count === 4)
-    .map(([rank]) => rank)
-    .sort((a, b) => b - a);
+  const rankValues = cards.map((card) => rankValueOf(card));
+  const counts = buildRankCounts(rankValues);
+  const pairRanks = ranksWithCount(counts, 2);
+  const tripRanks = ranksWithCount(counts, 3);
+  const quadRanks = ranksWithCount(counts, 4);
   const straightHighCard = getStraightHighCard(rankValues);
   const firstSuit = cards[0]?.suit;
   const isFlush = firstSuit !== undefined && cards.every((card) => card.suit === firstSuit);
@@ -224,15 +247,8 @@ export function evaluate5(cards: Card[]): HandEvaluation {
   }
 
   if (quadRanks.length === 1) {
-    const quadRank = quadRanks[0];
-    if (quadRank === undefined) {
-      throw new Error("Four of a kind rank resolution failed");
-    }
-
-    const kicker = rankValues.find((rank) => rank !== quadRank);
-    if (kicker === undefined) {
-      throw new Error("Four of a kind kicker resolution failed");
-    }
+    const quadRank = requireSingleRank(quadRanks, "Four of a kind rank resolution failed");
+    const kicker = findKicker(rankValues, [quadRank], "Four of a kind kicker resolution failed");
 
     return {
       category: "FOUR_OF_A_KIND",
@@ -241,11 +257,8 @@ export function evaluate5(cards: Card[]): HandEvaluation {
   }
 
   if (tripRanks.length === 1 && pairRanks.length === 1) {
-    const tripRank = tripRanks[0];
-    const pairRank = pairRanks[0];
-    if (tripRank === undefined || pairRank === undefined) {
-      throw new Error("Full house rank resolution failed");
-    }
+    const tripRank = requireSingleRank(tripRanks, "Full house rank resolution failed");
+    const pairRank = requireSingleRank(pairRanks, "Full house rank resolution failed");
 
     return {
       category: "FULL_HOUSE",
@@ -254,7 +267,7 @@ export function evaluate5(cards: Card[]): HandEvaluation {
   }
 
   if (isFlush) {
-    const flushRanks = [...rankValues].sort((a, b) => b - a);
+    const flushRanks = sortDesc(rankValues);
 
     return {
       category: "FLUSH",
@@ -270,14 +283,8 @@ export function evaluate5(cards: Card[]): HandEvaluation {
   }
 
   if (tripRanks.length === 1) {
-    const tripRank = tripRanks[0];
-    if (tripRank === undefined) {
-      throw new Error("Three of a kind rank resolution failed");
-    }
-
-    const kickers = rankValues
-      .filter((rank) => rank !== tripRank)
-      .sort((a, b) => b - a);
+    const tripRank = requireSingleRank(tripRanks, "Three of a kind rank resolution failed");
+    const kickers = sortDesc(rankValues.filter((rank) => rank !== tripRank));
 
     return {
       category: "THREE_OF_A_KIND",
@@ -291,10 +298,7 @@ export function evaluate5(cards: Card[]): HandEvaluation {
       throw new Error("Two pair rank resolution failed");
     }
 
-    const kicker = rankValues.find((rank) => rank !== highPair && rank !== lowPair);
-    if (kicker === undefined) {
-      throw new Error("Two pair kicker resolution failed");
-    }
+    const kicker = findKicker(rankValues, [highPair, lowPair], "Two pair kicker resolution failed");
 
     return {
       category: "TWO_PAIR",
@@ -303,13 +307,8 @@ export function evaluate5(cards: Card[]): HandEvaluation {
   }
 
   if (pairRanks.length === 1) {
-    const pairRank = pairRanks[0];
-    if (pairRank === undefined) {
-      throw new Error("Pair rank resolution failed");
-    }
-    const kickers = rankValues
-      .filter((rank) => rank !== pairRank)
-      .sort((a, b) => b - a);
+    const pairRank = requireSingleRank(pairRanks, "Pair rank resolution failed");
+    const kickers = sortDesc(rankValues.filter((rank) => rank !== pairRank));
 
     return {
       category: "ONE_PAIR",
@@ -317,7 +316,7 @@ export function evaluate5(cards: Card[]): HandEvaluation {
     };
   }
 
-  const tiebreak = rankValues.sort((a, b) => b - a);
+  const tiebreak = sortDesc(rankValues);
 
   return {
     category: "HIGH_CARD",
