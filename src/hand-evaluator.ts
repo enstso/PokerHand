@@ -80,6 +80,98 @@ function getCardAt(cards: Card[], index: number): Card {
   return card;
 }
 
+function rankValueOf(card: Card): number {
+  return RANK_VALUE[card.rank];
+}
+
+function groupCardsByRank(cards: Card[]): Map<number, Card[]> {
+  const groups = new Map<number, Card[]>();
+
+  for (const card of cards) {
+    const rankValue = rankValueOf(card);
+    const group = groups.get(rankValue);
+    if (group === undefined) {
+      groups.set(rankValue, [card]);
+      continue;
+    }
+    group.push(card);
+  }
+
+  return groups;
+}
+
+function sortCardsByRankDesc(cards: Card[]): Card[] {
+  return cards
+    .map((card, index) => ({ card, index, rankValue: rankValueOf(card) }))
+    .sort((left, right) => {
+      if (left.rankValue !== right.rankValue) {
+        return right.rankValue - left.rankValue;
+      }
+      return left.index - right.index;
+    })
+    .map(({ card }) => card);
+}
+
+function orderCardsByRankGroups(cards: Card[], rankOrder: number[]): Card[] {
+  const groups = groupCardsByRank(cards);
+  const ordered: Card[] = [];
+
+  for (const rank of rankOrder) {
+    const group = groups.get(rank);
+    if (group === undefined || group.length === 0) {
+      throw new Error("Unable to order cards by rank groups");
+    }
+    ordered.push(...group);
+  }
+
+  if (ordered.length !== cards.length) {
+    throw new Error("Ordered cards length mismatch");
+  }
+
+  return ordered;
+}
+
+function orderStraightCards(cards: Card[], highCard: number): Card[] {
+  const rankOrder =
+    highCard === 5
+      ? [5, 4, 3, 2, 14]
+      : [highCard, highCard - 1, highCard - 2, highCard - 3, highCard - 4];
+  const groups = groupCardsByRank(cards);
+  const ordered: Card[] = [];
+
+  for (const rank of rankOrder) {
+    const card = groups.get(rank)?.[0];
+    if (card === undefined) {
+      throw new Error("Unable to order straight cards");
+    }
+    ordered.push(card);
+  }
+
+  return ordered;
+}
+
+function orderChosen5(cards: Card[], evaluation: HandEvaluation): Card[] {
+  switch (evaluation.category) {
+    case "STRAIGHT":
+    case "STRAIGHT_FLUSH": {
+      const highCard = evaluation.tiebreak[0];
+      if (highCard === undefined) {
+        throw new Error("Missing straight high card");
+      }
+      return orderStraightCards(cards, highCard);
+    }
+    case "FOUR_OF_A_KIND":
+    case "FULL_HOUSE":
+    case "THREE_OF_A_KIND":
+    case "TWO_PAIR":
+    case "ONE_PAIR":
+      return orderCardsByRankGroups(cards, evaluation.tiebreak);
+    case "FLUSH":
+    case "HIGH_CARD":
+      return sortCardsByRankDesc(cards);
+  }
+}
+
 export function evaluate5(cards: Card[]): HandEvaluation {
   if (cards.length !== 5) {
     throw new Error("evaluate5 requires exactly 5 cards");
@@ -239,7 +331,7 @@ export function evaluate7(cards: Card[]): BestOfSevenEvaluation {
             const value = evaluate5(chosen5);
             const candidate: BestOfSevenEvaluation = {
               ...value,
-              chosen5
+              chosen5: orderChosen5(chosen5, value)
             };
 
             if (best === null || compareHandValues(candidate, best) > 0) {
