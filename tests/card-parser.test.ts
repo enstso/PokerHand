@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCard } from "../src/card";
+import { parseCard} from "../src/card.js";
 
 describe("parseCard", () => {
   it("parses a valid card notation", () => {
