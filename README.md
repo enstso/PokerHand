@@ -1,25 +1,41 @@
-# Poker Hand Evaluator (Texas Hold'em) - TypeScript + Vitest
+# Poker Hand Evaluator (Texas Hold'em)
 
-## Goal
-Evaluate Texas Hold'em hands with:
-- best 5-card selection out of 7 cards
-- category detection and tie-break values
-- multi-player winner detection with split-pot support
-- deterministic `chosen5` ordering
+TypeScript implementation of a Texas Hold'em hand evaluator and comparator.
 
-Reference rules:
+Rules reference:
 - [Wikipedia - List of poker hands](https://en.wikipedia.org/wiki/List_of_poker_hands)
 
-## Tech Stack
+## Goal
+- Select the best 5-card hand out of 7 cards.
+- Compare hand values (category + tie-break).
+- Compare multiple players (single winner or split pot).
+- Return a deterministic `chosen5` consistent with tie-break rules.
+
+## Stack
 - TypeScript
 - Vitest
 
-## Scripts
-- `npm test`: run tests once
-- `npm run test:watch`: watch mode
-- `npm run typecheck`: TypeScript type-checking
+## Installation
+```bash
+npm install
+```
 
-## Supported Hand Categories (high to low)
+## Commands
+```bash
+npm test
+npm run test:watch
+npm run typecheck
+npm run lint
+npm run test:coverage
+npm run verify
+```
+
+## Card Format
+- Allowed ranks: `2 3 4 5 6 7 8 9 T J Q K A`
+- Allowed suits: `C D H S`
+- Example: `AS`, `TD`, `7H`
+
+## Supported Categories (highest to lowest)
 1. `STRAIGHT_FLUSH`
 2. `FOUR_OF_A_KIND`
 3. `FULL_HOUSE`
@@ -30,88 +46,83 @@ Reference rules:
 8. `ONE_PAIR`
 9. `HIGH_CARD`
 
-## Tie-Break Rules Implemented
-- `STRAIGHT_FLUSH`, `STRAIGHT`: compare highest straight card (wheel `A-2-3-4-5` is `5-high`)
-- `FOUR_OF_A_KIND`: quad rank, then kicker
-- `FULL_HOUSE`: trip rank, then pair rank
-- `FLUSH`: compare all 5 cards in descending rank
-- `THREE_OF_A_KIND`: trip rank, then two kickers descending
-- `TWO_PAIR`: high pair, low pair, kicker
-- `ONE_PAIR`: pair rank, then three kickers descending
-- `HIGH_CARD`: five cards descending
+## Implemented Tie-Break Rules
+- `STRAIGHT_FLUSH` / `STRAIGHT`: highest card in the straight (`A-2-3-4-5` is 5-high).
+- `FOUR_OF_A_KIND`: quad rank, then kicker.
+- `FULL_HOUSE`: trip rank, then pair rank.
+- `FLUSH`: all 5 cards in descending rank order.
+- `THREE_OF_A_KIND`: trip rank, then 2 kickers descending.
+- `TWO_PAIR`: high pair, low pair, kicker.
+- `ONE_PAIR`: pair rank, then 3 kickers descending.
+- `HIGH_CARD`: all 5 cards descending.
 
-## `chosen5` Deterministic Ordering
-Returned `chosen5` is always exactly 5 cards and follows a deterministic category-based order:
-- `STRAIGHT` / `STRAIGHT_FLUSH`: high -> low (wheel as `5,4,3,2,A`)
-- `FOUR_OF_A_KIND`: quads first, kicker last
-- `FULL_HOUSE`: trip cards first, pair cards second
-- `THREE_OF_A_KIND`: trips first, then kickers descending
-- `TWO_PAIR`: high pair, low pair, kicker
-- `ONE_PAIR`: pair first, then kickers descending
-- `FLUSH` / `HIGH_CARD`: descending ranks
+## Deterministic `chosen5` Ordering
+`chosen5` is always returned in canonical order:
+- `STRAIGHT` / `STRAIGHT_FLUSH`: high -> low (wheel: `5,4,3,2,A`).
+- `FOUR_OF_A_KIND`: quads first, kicker last.
+- `FULL_HOUSE`: trip cards first, pair cards second.
+- `THREE_OF_A_KIND`: trips first, then kickers.
+- `TWO_PAIR`: high pair, low pair, kicker.
+- `ONE_PAIR`: pair first, then kickers.
+- `FLUSH` / `HIGH_CARD`: descending ranks.
 
-## Input Validation Strategy / Assumptions
-This project **rejects duplicate cards** with explicit errors:
-- duplicate in `evaluate7(...)`
-- duplicate between board and hole cards in Hold'em
-- duplicate across multiple players in winner calculation
+## Input Validation Strategy
+The project uses explicit duplicate-card rejection:
+- duplicate in `evaluate7`
+- duplicate between board and hole cards
+- duplicate across multiple players
 
 Error format:
 - `Duplicate card: <notation>`
 
 ## Public API
+```ts
+// src/card.ts
+parseCard(notation: string): Card
 
-### Card parsing
-From `src/card.ts`:
-- `parseCard(notation: string): Card`
+// src/hand-evaluator.ts
+evaluate5(cards: Card[]): HandEvaluation
+evaluate7(cards: Card[]): BestOfSevenEvaluation
+assertNoDuplicateCards(cards: Card[]): void
 
-Accepted rank chars: `2..9,T,J,Q,K,A`  
-Accepted suits: `C,D,H,S`
+// src/hand-comparator.ts
+compareHandValues(left: HandEvaluation, right: HandEvaluation): number
 
-### 5-card and 7-card evaluation
-From `src/hand-evaluator.ts`:
-- `evaluate5(cards: Card[]): HandEvaluation`
-- `evaluate7(cards: Card[]): BestOfSevenEvaluation`
+// src/holdem.ts
+evaluateHoldemHand(board: Card[], hole: Card[]): BestOfSevenEvaluation
+determineWinners(board: Card[], playersHoles: Card[][]): WinnersResult
+```
 
-`HandEvaluation`:
-- `category: HandCategory`
-- `tiebreak: number[]`
-
-`BestOfSevenEvaluation`:
-- `category`
-- `tiebreak`
-- `chosen5: Card[]`
-
-### Hand value comparison
-From `src/hand-comparator.ts`:
-- `compareHandValues(left: HandEvaluation, right: HandEvaluation): number`
-
-Returns:
-- `> 0` if `left` is stronger
-- `< 0` if `right` is stronger
-- `0` if equal
-
-### Hold'em helpers
-From `src/holdem.ts`:
-- `evaluateHoldemHand(board: Card[], hole: Card[]): BestOfSevenEvaluation`
-- `determineWinners(board: Card[], playersHoles: Card[][]): WinnersResult`
+`compareHandValues` returns:
+- `> 0` if left hand is stronger
+- `< 0` if right hand is stronger
+- `0` if tied
 
 `WinnersResult`:
 - `winnerIndexes: number[]`
 - `playerResults: BestOfSevenEvaluation[]`
 - `splitPot: boolean`
 
-## TDD Approach Used
-Development followed strict incremental TDD cycles:
-1. write a failing test (`RED`)
-2. add minimal code to pass (`GREEN`)
-3. refactor with tests green (`REFACTOR`)
+## Out of Scope
+- betting rules (blinds, antes, side pots, stacks)
+- jokers / wild cards
+- suit-based tie-breaking
 
-Coverage progression included:
+## TDD Approach
+The project was built in short TDD cycles:
+1. `RED`: write a failing test
+2. `GREEN`: implement minimal code to pass
+3. `REFACTOR`: clean internals with behavior unchanged
+
+Current test suite covers:
 - all hand categories
-- tie-break rules per category
-- best-of-7 selection and board plays
-- deterministic `chosen5`
-- winner and split-pot detection
-- duplicate-input validation
+- per-category tie-break behavior
+- best-of-7 selection
+- board plays (0/1/2 hole cards)
+- multi-player winners and split pots
+- deterministic `chosen5` ordering
+- duplicate input validation
 - integration tests for subject examples A-E
+
+## Exam Deliverables
+- `students.txt` at repository root
