@@ -1,5 +1,5 @@
 import type { Card } from "./card.js";
-import { evaluate7, type BestOfSevenEvaluation } from "./hand-evaluator.js";
+import { assertNoDuplicateCards, evaluate7, type BestOfSevenEvaluation } from "./hand-evaluator.js";
 import { compareHandValues } from "./hand-comparator.js";
 
 export type WinnersResult = {
@@ -17,6 +17,7 @@ export function evaluateHoldemHand(board: Card[], hole: Card[]): BestOfSevenEval
     throw new Error("Hole cards must contain exactly 2 cards");
   }
 
+  assertNoDuplicateCards([...board, ...hole]);
   return evaluate7([...board, ...hole]);
 }
 
@@ -24,6 +25,12 @@ export function determineWinners(board: Card[], playersHoles: Card[][]): Winners
   if (playersHoles.length === 0) {
     throw new Error("At least one player is required");
   }
+
+  const allCards: Card[] = [...board];
+  for (const holeCards of playersHoles) {
+    allCards.push(...holeCards);
+  }
+  assertNoDuplicateCards(allCards);
 
   const playerResults = playersHoles.map((holeCards) => evaluateHoldemHand(board, holeCards));
   let bestHand = playerResults[0];

@@ -37,6 +37,22 @@ const RANK_VALUE: Record<Rank, number> = {
   A: 14
 };
 
+function notationOf(card: Card): string {
+  return `${card.rank}${card.suit}`;
+}
+
+export function assertNoDuplicateCards(cards: Card[]): void {
+  const seen = new Set<string>();
+
+  for (const card of cards) {
+    const notation = notationOf(card);
+    if (seen.has(notation)) {
+      throw new Error(`Duplicate card: ${notation}`);
+    }
+    seen.add(notation);
+  }
+}
+
 function getStraightHighCard(rankValues: number[]): number | null {
   const uniqueRanks = [...new Set(rankValues)].sort((a, b) => a - b);
 
@@ -313,6 +329,7 @@ export function evaluate7(cards: Card[]): BestOfSevenEvaluation {
   if (cards.length !== 7) {
     throw new Error("evaluate7 requires exactly 7 cards");
   }
+  assertNoDuplicateCards(cards);
 
   let best: BestOfSevenEvaluation | null = null;
 
