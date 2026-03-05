@@ -33,18 +33,12 @@ export function determineWinners(board: Card[], playersHoles: Card[][]): Winners
   assertNoDuplicateCards(allCards);
 
   const playerResults = playersHoles.map((holeCards) => evaluateHoldemHand(board, holeCards));
-  let bestHand = playerResults[0];
-  if (bestHand === undefined) {
-    throw new Error("Unable to determine winner");
-  }
+  let bestHand = playerResults[0] as BestOfSevenEvaluation;
 
   const winnerIndexes = [0];
 
   for (let index = 1; index < playerResults.length; index += 1) {
-    const hand = playerResults[index];
-    if (hand === undefined) {
-      continue;
-    }
+    const hand = playerResults[index] as BestOfSevenEvaluation;
 
     const comparison = compareHandValues(hand, bestHand);
     if (comparison > 0) {
