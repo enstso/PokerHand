@@ -1,6 +1,10 @@
 import type { Card, Rank } from "./card.js";
 
-export type HandCategory = "HIGH_CARD" | "ONE_PAIR" | "TWO_PAIR";
+export type HandCategory =
+  | "HIGH_CARD"
+  | "ONE_PAIR"
+  | "TWO_PAIR"
+  | "THREE_OF_A_KIND";
 
 export type HandEvaluation = {
   category: HandCategory;
@@ -39,6 +43,26 @@ export function evaluate5(cards: Card[]): HandEvaluation {
     .filter(([, count]) => count === 2)
     .map(([rank]) => rank)
     .sort((a, b) => b - a);
+  const tripRanks = [...counts.entries()]
+    .filter(([, count]) => count === 3)
+    .map(([rank]) => rank)
+    .sort((a, b) => b - a);
+
+  if (tripRanks.length === 1) {
+    const tripRank = tripRanks[0];
+    if (tripRank === undefined) {
+      throw new Error("Three of a kind rank resolution failed");
+    }
+
+    const kickers = rankValues
+      .filter((rank) => rank !== tripRank)
+      .sort((a, b) => b - a);
+
+    return {
+      category: "THREE_OF_A_KIND",
+      tiebreak: [tripRank, ...kickers]
+    };
+  }
 
   if (pairRanks.length === 2) {
     const [highPair, lowPair] = pairRanks;
